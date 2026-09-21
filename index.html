@@ -72,8 +72,11 @@ h2.sec{font:700 22px/1.2 var(--font-d);margin:28px 0 0;letter-spacing:-.01em}
 .fsize{font-size:13px;color:var(--muted)}
 .icon-btn{border:0;background:transparent;width:36px;height:36px;border-radius:50%;cursor:pointer;color:var(--muted);font-size:20px;line-height:1}
 .icon-btn:hover{background:#FDECF2;color:var(--bad)}
-@media (max-width:560px){.frow{grid-template-columns:auto 1fr auto}.frow .select{grid-column:1/-1;width:100%}}
+@media (max-width:560px){.frow{grid-template-columns:auto 1fr auto}.frow .icon-btn{grid-row:1;grid-column:3}.frow .select{grid-row:2;grid-column:1/-1;width:100%}.frow .other-in{grid-row:3}}
 .total{margin:10px 2px 0;font-size:14px;color:var(--muted)}
+.total.need{color:var(--bad);font-weight:600}
+.input.sm{height:38px;font-size:14px;padding:0 10px}
+.frow .other-in{grid-column:1/-1}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 22px;border:0;border-radius:var(--r-md);
   background:var(--primary);color:#fff;font-weight:600;cursor:pointer;transition:background .15s}
@@ -182,9 +185,11 @@ const CONFIG = {
   MAX_FILES: 25,
   DEMO_ADMIN_PASSWORD: "admin",   // only used in demo mode
 
-  COLLEGES: ["Christ University", "Jain University", "Mount Carmel College", "St. Joseph's University", "Presidency University"],
-  STREAMS:  ["BBA", "BCom", "BCA", "BSc", "BA", "MBA", "MCom"],
-  CATEGORIES: ["ATS card", "Introduction video", "Resume", "Photo", "Assignment", "Other"]
+  // "Other (type below)" is added automatically to the College and Stream dropdowns.
+  COLLEGES: ["Krupanidhi College", "Christ University", "Jain University", "Mount Carmel College", "St. Joseph's University", "Presidency University", "Kristu Jayanti University"],
+  STREAMS:  ["MBA Marketing", "MBA Finance", "MBA HR", "MBA Operations", "MBA Business Analytics", "BBA", "BCom", "BCA", "MCA", "Engineering \u2014 CSE/IT", "Engineering \u2014 ECE", "Engineering \u2014 Mechanical"],
+  // What each uploaded file is. "Other" makes the student type a label.
+  CATEGORIES: ["KYC card", "Career Match Card", "ATS Card", "Resume", "Mini Project", "Other"]
 };
 
 /* ---------- helpers ---------- */
@@ -211,12 +216,12 @@ function toast(msg, ms = 3200) {
 }
 function guessCategory(f) {
   const n = f.name.toLowerCase();
-  if (/\bats\b|ats[_\- ]/.test(n)) return 'ATS card';
+  if (/kyc|aadhaar|aadhar|pan[_\- ]?card/.test(n)) return 'KYC card';
+  if (/career[_\- ]?match/.test(n)) return 'Career Match Card';
+  if (/\bats\b|ats[_\- ]/.test(n)) return 'ATS Card';
   if (/resume|\bcv\b/.test(n)) return 'Resume';
-  if (/assign/.test(n)) return 'Assignment';
-  if (f.type.startsWith('video/')) return 'Introduction video';
-  if (f.type.startsWith('image/')) return 'Photo';
-  return 'Other';
+  if (/project/.test(n)) return 'Mini Project';
+  return '';   // unknown: the student picks from the dropdown
 }
 function kindOf(f) {
   const e = extOf(f.name), t = f.type || '';
@@ -264,7 +269,7 @@ const Live = {
       onProgress(i, items.length, it.file.name);
       const path = `${rec.id}/${Date.now()}_${i}_${it.file.name.replace(/[^\w.\-]+/g, '_')}`;
       await this.putFile(path, it.file);
-      uploaded.push({ name: it.file.name, path, size: it.file.size, type: it.file.type, category: it.category });
+      uploaded.push({ name: it.file.name, path, size: it.file.size, type: it.file.type, category: it.category, other_label: it.otherLabel || '' });
       i++;
     }
     onProgress(i, items.length, '');
@@ -293,7 +298,7 @@ const Demo = {
   db() { return new Promise((res, rej) => { const r = indexedDB.open('nxtlvl-demo', 1); r.onupgradeneeded = () => r.result.createObjectStore('subs', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
   async run(mode, fn) { const db = await this.db(); return new Promise((res, rej) => { const t = db.transaction('subs', mode); const req = fn(t.objectStore('subs')); t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error); }); },
   async submit(rec, items, onProgress) {
-    const files = items.map(it => ({ name: it.file.name, size: it.file.size, type: it.file.type, category: it.category, blob: it.file }));
+    const files = items.map(it => ({ name: it.file.name, size: it.file.size, type: it.file.type, category: it.category, other_label: it.otherLabel || '', blob: it.file }));
     for (let i = 0; i <= files.length; i++) { onProgress(i, files.length, files[i]?.name || ''); await new Promise(r => setTimeout(r, 150)); }
     await this.run('readwrite', s => s.put({ ...rec, created_at: new Date().toISOString(), files }));
   },
@@ -353,6 +358,7 @@ function renderStudent() {
     <div class="errs" id="errs" role="alert" hidden></div>
     <ul class="flist" id="flist"></ul>
     <div class="total" id="total"></div>
+    <div class="total need" id="need" hidden></div>
 
     <button class="btn block" id="submitBtn" disabled>Submit my work</button>
     <p class="privacy">Only the NXT LVL team can see what you upload.</p>
@@ -362,12 +368,15 @@ function renderStudent() {
   const college = () => (form.college === '__other' ? form.collegeOther : form.college).trim();
   const stream = () => (form.stream === '__other' ? form.streamOther : form.stream).trim();
   const detailsOk = () => !!(form.name.trim() && college() && stream() && form.date);
+  const typesOk = () => form.files.every(x => x.category && (x.category !== 'Other' || x.otherLabel.trim()));
 
   function refresh() {
     $colO.hidden = form.college !== '__other'; $strO.hidden = form.stream !== '__other';
-    const d = detailsOk(), f = form.files.length > 0, steps = document.querySelectorAll('#stairs .step');
+    const d = detailsOk(), f = form.files.length > 0 && typesOk(), steps = document.querySelectorAll('#stairs .step');
     steps[0].classList.toggle('done', d); steps[1].classList.toggle('done', f); steps[2].classList.toggle('done', d && f);
     $('#submitBtn').disabled = !(d && f);
+    const need = $('#need'); need.hidden = !(form.files.length && !typesOk());
+    need.textContent = 'Choose what each file is before submitting. If you pick Other, type what it is.';
   }
   $name.oninput = e => { form.name = e.target.value; refresh(); };
   $col.onchange = e => { form.college = e.target.value; refresh(); if (form.college === '__other') $colO.focus(); };
@@ -381,15 +390,24 @@ function renderStudent() {
       <li class="frow" data-id="${x.id}">
         <div class="badge">${esc(extOf(x.file.name).slice(0, 4).toUpperCase() || 'FILE')}</div>
         <div class="fmeta"><div class="fname" title="${esc(x.file.name)}">${esc(x.file.name)}</div><div class="fsize">${fmtSize(x.file.size)}</div></div>
-        <select class="select sm" aria-label="File type for ${esc(x.file.name)}">${CONFIG.CATEGORIES.map(c => `<option${c === x.category ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
+        <select class="select sm" aria-label="What is ${esc(x.file.name)}?"><option value="">What is this file?</option>${CONFIG.CATEGORIES.map(c => `<option${c === x.category ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
         <button class="icon-btn" aria-label="Remove ${esc(x.file.name)}">&times;</button>
+        <input class="input sm other-in" placeholder="Type what this file is (e.g. Offer letter)" maxlength="60" aria-label="Describe ${esc(x.file.name)}" value="${esc(x.otherLabel)}"${x.category === 'Other' ? '' : ' hidden'}>
       </li>`).join('');
     const total = form.files.reduce((s, x) => s + x.file.size, 0);
     $('#total').textContent = form.files.length ? `${form.files.length} file${form.files.length > 1 ? 's' : ''} selected, ${fmtSize(total)} in total` : '';
   }
   $('#flist').addEventListener('change', e => {
-    const row = e.target.closest('.frow'); if (!row) return;
-    const it = form.files.find(x => x.id === row.dataset.id); if (it) it.category = e.target.value;
+    const row = e.target.closest('.frow'); if (!row || !e.target.matches('select')) return;
+    const it = form.files.find(x => x.id === row.dataset.id); if (!it) return;
+    it.category = e.target.value;
+    const oi = row.querySelector('.other-in'); oi.hidden = it.category !== 'Other'; if (!oi.hidden) oi.focus();
+    refresh();
+  });
+  $('#flist').addEventListener('input', e => {
+    if (!e.target.matches('.other-in')) return;
+    const it = form.files.find(x => x.id === e.target.closest('.frow').dataset.id); if (it) it.otherLabel = e.target.value;
+    refresh();
   });
   $('#flist').addEventListener('click', e => {
     const b = e.target.closest('.icon-btn'); if (!b) return;
@@ -403,7 +421,7 @@ function renderStudent() {
       if (f.size === 0) { errs.push(`${f.name}: the file is empty.`); continue; }
       if (f.size > maxBytes) { errs.push(`${f.name} is ${fmtSize(f.size)}. Compress it to under ${CONFIG.MAX_FILE_MB} MB and try again.`); continue; }
       if (form.files.length >= CONFIG.MAX_FILES) { errs.push(`You can upload up to ${CONFIG.MAX_FILES} files at a time.`); break; }
-      form.files.push({ id: uuid(), file: f, category: guessCategory(f) });
+      form.files.push({ id: uuid(), file: f, category: guessCategory(f), otherLabel: '' });
     }
     const box = $('#errs'); box.hidden = !errs.length; box.innerHTML = errs.map(m => `<p>${esc(m)}</p>`).join('');
     renderFiles(); refresh();
@@ -431,7 +449,7 @@ function renderStudent() {
     const guard = e => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', guard);
     try {
-      await backend.submit(rec, form.files.map(x => ({ file: x.file, category: x.category })), (done, total, name) => {
+      await backend.submit(rec, form.files.map(x => ({ file: x.file, category: x.category, otherLabel: x.category === 'Other' ? x.otherLabel.trim() : '' })), (done, total, name) => {
         $('#ov-bar').style.width = Math.max(6, Math.round(done / total * 100)) + '%';
         $('#ov-msg').textContent = done >= total ? 'Finishing up' : `Uploading file ${done + 1} of ${total}: ${name}`;
       });
@@ -539,17 +557,21 @@ function fillFilters() {
   set('fc', 'All colleges', uniq(r => r.college).sort(), A.f.college);
   set('fs', 'All streams', uniq(r => r.stream).sort(), A.f.stream);
   set('fd', 'All dates', uniq(r => r.training_date).sort().reverse(), A.f.date, fmtDate);
-  set('ft', 'All file types', CONFIG.CATEGORIES, A.f.cat);
+  const known = new Set(CONFIG.CATEGORIES.map(c => c.toLowerCase()));
+  const extra = [...new Set(A.rows.flatMap(r => r.files.map(f => f.category)).filter(c => c && !known.has(c.toLowerCase())))].sort();
+  set('ft', 'All file types', [...CONFIG.CATEGORIES, ...extra], A.f.cat);
 }
 
 const filtersActive = () => Object.values(A.f).some(Boolean);
-const visibleFiles = r => r.files.map((f, i) => ({ f, i })).filter(x => !A.f.cat || x.f.category === A.f.cat);
+const catKey = c => String(c || 'Other').toLowerCase();
+const catLabel = f => (catKey(f.category) === 'other' && f.other_label) ? 'Other: ' + f.other_label : (f.category || 'Other');
+const visibleFiles = r => r.files.map((f, i) => ({ f, i })).filter(x => !A.f.cat || catKey(x.f.category) === catKey(A.f.cat));
 function filtered() {
   const q = A.f.q.trim().toLowerCase();
   return A.rows.filter(r =>
     (!A.f.college || r.college === A.f.college) && (!A.f.stream || r.stream === A.f.stream) && (!A.f.date || r.training_date === A.f.date) &&
     (!q || r.student_name.toLowerCase().includes(q) || r.id.startsWith(q)) &&
-    (!A.f.cat || r.files.some(f => f.category === A.f.cat)));
+    (!A.f.cat || r.files.some(f => catKey(f.category) === catKey(A.f.cat))));
 }
 
 function drawList() {
@@ -587,7 +609,7 @@ function drawList() {
 
 function subHTML(r) {
   const files = visibleFiles(r).map(({ f, i }) => `
-    <li><span class="cat">${esc(f.category || 'Other')}</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="fsize">${fmtSize(f.size || 0)}</span>
+    <li><span class="cat">${esc(catLabel(f))}</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="fsize">${fmtSize(f.size || 0)}</span>
       <button class="link" data-act="view" data-id="${r.id}" data-fi="${i}">View</button>
       <button class="link" data-act="dl" data-id="${r.id}" data-fi="${i}">Download</button></li>`).join('');
   return `<article class="sub"><div class="sub-h"><div><strong>${esc(r.student_name)}</strong>
@@ -637,7 +659,7 @@ function exportCSV() {
   const rows = filtered(); if (!rows.length) return toast('Nothing to export');
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const head = ['Reference', 'Submitted at', 'Student name', 'College', 'Stream', 'Training date', 'File count', 'Files', 'File types'];
-  const lines = rows.map(r => { const vf = visibleFiles(r).map(x => x.f); return [r.id.slice(0, 8), r.created_at, r.student_name, r.college, r.stream, r.training_date, vf.length, vf.map(x => x.name).join('; '), vf.map(x => x.category).join('; ')].map(q).join(','); });
+  const lines = rows.map(r => { const vf = visibleFiles(r).map(x => x.f); return [r.id.slice(0, 8), r.created_at, r.student_name, r.college, r.stream, r.training_date, vf.length, vf.map(x => x.name).join('; '), vf.map(catLabel).join('; ')].map(q).join(','); });
   saveBlob(new Blob(['\ufeff' + [head.map(q).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }), `nxtlvl-submissions-${new Date().toISOString().slice(0, 10)}.csv`);
   toast(`Exported ${rows.length} submissions`);
 }
@@ -652,7 +674,7 @@ async function exportZip(btn) {
   try {
     for (const { r, f, i } of items) {
       btn.textContent = `Preparing ${++n} of ${items.length}`;
-      const path = [safeName(r.college), safeName(r.stream), safeName(fmtDate(r.training_date)), safeName(r.student_name)].join('/') + `/${safeName(f.category || 'Other')} ${i + 1} - ${safeName(f.name)}`;
+      const path = [safeName(r.college), safeName(r.stream), safeName(fmtDate(r.training_date)), safeName(r.student_name)].join('/') + `/${safeName(catLabel(f))} ${i + 1} - ${safeName(f.name)}`;
       zip.file(path, await backend.fileBlob(f));
     }
     btn.textContent = 'Building ZIP';
