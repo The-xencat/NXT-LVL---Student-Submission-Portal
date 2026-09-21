@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>NXT LVL Student Submission Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12143A; --bg:#EDEFFA; --surface:#FFFFFF; --primary:#4338FF; --primary-dk:#3229D6;
+  --amber:#FFB400; --line:#D6DAF0; --tint:#F5F5FF; --muted:#5A5E86; --ok:#0B8F62; --bad:#C92A5B;
+  --r-lg:20px; --r-md:12px; --r-sm:8px;
+  --font-d:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --font-b:'DM Sans','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font-b);min-height:100vh}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+
+/* ---------- Student view ---------- */
+.hero{background:var(--ink);color:#fff;padding:34px 20px 100px;position:relative;overflow:hidden}
+.hero-in{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:16px;position:relative;z-index:1}
+.hero .mark{width:54px;height:54px;flex:none}
+.wordmark{font:800 clamp(34px,8vw,54px)/1 var(--font-d);letter-spacing:-.02em;margin:0}
+.hero p{margin:8px 0 0;color:#B9BCE6}
+.hero-steps{position:absolute;right:0;bottom:0;height:100%;width:min(60%,420px);opacity:.09}
+
+.sheet{max-width:680px;margin:-68px auto 40px;background:var(--surface);border-radius:var(--r-lg);padding:28px;
+  box-shadow:0 24px 48px -26px rgba(18,20,58,.45);position:relative}
+.demo-banner{background:#FFF4D6;border:1px solid #F3D68A;border-radius:var(--r-md);padding:10px 14px;font-size:14px;margin-bottom:20px}
+.stairs{display:flex;align-items:flex-end;gap:6px;margin-bottom:8px}
+.step{flex:1}
+.step i{display:block;background:var(--line);border-radius:6px 6px 0 0;transition:background .25s}
+.step:nth-child(1) i{height:12px}.step:nth-child(2) i{height:22px}.step:nth-child(3) i{height:32px}
+.step.done i{background:var(--amber)}
+.step span{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+.step.done span{color:var(--ink);font-weight:600}
+h2.sec{font:700 22px/1.2 var(--font-d);margin:28px 0 0;letter-spacing:-.01em}
+.sec-sub{margin:4px 0 0;color:var(--muted);font-size:14px}
+.field{margin-top:18px}
+.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.input,.select{width:100%;height:50px;border:1.5px solid var(--line);border-radius:10px;padding:0 14px;background:#fff;transition:border-color .15s, box-shadow .15s}
+.input:hover,.select:hover{border-color:#B8BDE3}
+.input:focus,.select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(67,56,255,.15)}
+.select{appearance:none;-webkit-appearance:none;padding-right:40px;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%2312143A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center}
+.select.sm{height:38px;font-size:14px;padding-left:10px;padding-right:32px;background-position:right 12px center}
+.other{margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.sheet{padding:22px 18px;margin-left:12px;margin-right:12px}}
+
+.drop{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;margin-top:16px;padding:26px 16px;
+  border:2px dashed #9A94FF;border-radius:var(--r-md);background:var(--tint);cursor:pointer;transition:background .15s,border-color .15s}
+.drop:hover,.drop.over{background:#E9E8FF;border-color:var(--primary)}
+.drop strong{font-size:16px}
+.drop small{color:var(--muted)}
+.drop svg{width:30px;height:30px;color:var(--primary)}
+.file-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.errs{margin:10px 0 0;padding:10px 14px;border-radius:var(--r-sm);background:#FDECF2;color:#8E1B40;font-size:14px}
+.errs p{margin:2px 0}
+.flist{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.frow{display:grid;grid-template-columns:auto 1fr 170px auto;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px}
+.badge{width:44px;height:44px;border-radius:9px;background:var(--ink);color:#fff;font:700 11px/44px var(--font-d);text-align:center;letter-spacing:.02em;overflow:hidden}
+.fmeta{min-width:0}
+.fname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.fsize{font-size:13px;color:var(--muted)}
+.icon-btn{border:0;background:transparent;width:36px;height:36px;border-radius:50%;cursor:pointer;color:var(--muted);font-size:20px;line-height:1}
+.icon-btn:hover{background:#FDECF2;color:var(--bad)}
+@media (max-width:560px){.frow{grid-template-columns:auto 1fr auto}.frow .select{grid-column:1/-1;width:100%}}
+.total{margin:10px 2px 0;font-size:14px;color:var(--muted)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 22px;border:0;border-radius:var(--r-md);
+  background:var(--primary);color:#fff;font-weight:600;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--primary-dk)}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btn.block{width:100%;margin-top:26px;font-size:17px}
+.btn.sm{height:40px;padding:0 16px;font-size:14px;border-radius:10px}
+.btn.alt{background:var(--tint);color:var(--primary-dk);border:1.5px solid #CFCBFF}
+.btn.alt:hover{background:#E9E8FF}
+.btn.dark{background:var(--ink)}.btn.dark:hover{background:#23276B}
+.privacy{margin:14px 0 0;text-align:center;color:var(--muted);font-size:13px}
+
+.overlay{position:fixed;inset:0;background:rgba(18,20,58,.72);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:#fff;border-radius:var(--r-lg);padding:26px;width:min(440px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 6px;font:700 22px var(--font-d)}
+.modal p{margin:6px 0}
+.bar{height:12px;border-radius:99px;background:var(--line);overflow:hidden;margin:16px 0}
+.bar i{display:block;height:100%;width:0;background:var(--primary);transition:width .3s;
+  background-image:linear-gradient(45deg,rgba(255,255,255,.28) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.28) 50%,rgba(255,255,255,.28) 75%,transparent 75%);
+  background-size:24px 24px;animation:move 1s linear infinite}
+@keyframes move{to{background-position:24px 0}}
+.hint{color:var(--muted);font-size:14px}
+.done-card{text-align:center;padding:12px 0 4px}
+.done-card .tick{width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.done-card .tick svg{width:36px;height:36px;color:#fff}
+.done-card h2{font:800 28px var(--font-d);margin:0 0 6px}
+.ref{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:99px;background:var(--tint);font-weight:600;font-size:14px}
+
+/* ---------- Admin view ---------- */
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;padding:14px 18px;background:var(--ink);color:#fff;border-radius:var(--r-lg)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mark{width:34px;height:34px}
+.brand b{font:800 22px var(--font-d);letter-spacing:-.01em}
+.brand span{color:#B9BCE6;font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.topbar .btn.alt{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:#fff}
+.topbar .btn.alt:hover{background:rgba(255,255,255,.2)}
+.filters{display:grid;grid-template-columns:2fr repeat(4,1fr) auto;gap:10px;margin-top:16px;align-items:end}
+.filters .input,.filters .select{height:44px;font-size:15px}
+@media (max-width:860px){.filters{grid-template-columns:1fr 1fr}.filters .search{grid-column:1/-1}}
+.summary{margin:18px 2px 10px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;color:var(--muted);font-size:14px}
+.summary b{color:var(--ink)}
+.tree details{margin:0}
+.tree summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;user-select:none}
+.tree summary::-webkit-details-marker{display:none}
+.tree summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 4px 0 2px}
+.tree details[open]>summary::before{transform:rotate(45deg)}
+.tree summary:hover{background:rgba(67,56,255,.07)}
+.count{margin-left:auto;background:#fff;border:1.5px solid var(--line);border-radius:99px;padding:1px 10px;font-size:13px;font-weight:600;color:var(--muted)}
+.l1>summary{font:700 21px var(--font-d);letter-spacing:-.01em}
+.l1{background:var(--surface);border-radius:var(--r-lg);padding:6px;margin-bottom:12px}
+.l2,.l3{margin-left:16px;padding-left:12px;border-left:2px solid var(--line)}
+.l2>summary{font-weight:700;font-size:17px}
+.l3>summary{font-weight:600;color:var(--muted)}
+.subs{display:grid;gap:10px;padding:6px 0 12px 10px}
+.sub{border:1.5px solid var(--line);border-radius:var(--r-md);padding:14px;background:#fff}
+.sub-h{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:flex-start}
+.sub-h strong{font-size:17px;display:block}
+.sub-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.files li{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:10px;align-items:center;padding:8px 10px;background:var(--tint);border-radius:9px}
+.cat{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--ink);color:#fff;white-space:nowrap}
+.files .fname{font-weight:500;font-size:14px}
+.link{border:0;background:transparent;color:var(--primary-dk);font-weight:600;font-size:14px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.link:hover{background:#E4E2FF}
+.link.danger{color:var(--bad)}.link.danger:hover{background:#FDECF2}
+@media (max-width:640px){.files li{grid-template-columns:1fr auto auto}.files .cat{grid-column:1/-1;justify-self:start}.files .fsize{display:none}}
+.empty{text-align:center;padding:48px 16px;background:var(--surface);border-radius:var(--r-lg);color:var(--muted)}
+.empty b{display:block;color:var(--ink);font:700 20px var(--font-d);margin-bottom:4px}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--ink)}
+.login{width:min(420px,100%);margin:0}
+.login h2{font:800 26px var(--font-d);margin:0 0 4px}
+.login .msg{color:var(--bad);font-size:14px;margin:12px 0 0;min-height:20px}
+.mode{margin-top:26px;text-align:center;color:var(--muted);font-size:13px}
+.qr{display:block;margin:14px auto;width:230px;height:230px;border:1.5px solid var(--line);border-radius:12px}
+.copy-row{display:flex;gap:8px}
+.copy-row .input{height:44px;font-size:14px}
+.preview{max-width:min(92vw,1000px);max-height:88vh;background:#000;border-radius:12px;display:block}
+.preview-x{position:fixed;top:14px;right:16px;background:#fff;border:0;width:42px;height:42px;border-radius:50%;font-size:22px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;z-index:80;max-width:90vw;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* =====================================================================
+   NXT LVL Student Submission Portal
+   ---------------------------------------------------------------------
+   1. Edit CONFIG below (colleges, streams, Supabase keys).
+   2. Host this one file (Netlify Drop / Vercel / GitHub Pages).
+   3. Students open the link.  You open the same link + #admin
+   ===================================================================== */
+const CONFIG = {
+  // Paste these from Supabase > Project Settings > API. Leave empty for DEMO mode.
+  SUPABASE_URL: "https://grxfykcnbphdmcvmftrj.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_9JCQZJf482V5859WuKA9jw_ckHnAx7a",
+
+  BUCKET: "nxtlvl-uploads",
+  MAX_FILE_MB: 50,          // Supabase free plan allows up to 50 MB per file
+  MAX_FILES: 25,
+  DEMO_ADMIN_PASSWORD: "admin",   // only used in demo mode
+
+  COLLEGES: ["Christ University", "Jain University", "Mount Carmel College", "St. Joseph's University", "Presidency University"],
+  STREAMS:  ["BBA", "BCom", "BCA", "BSc", "BA", "MBA", "MCom"],
+  CATEGORIES: ["ATS card", "Introduction video", "Resume", "Photo", "Assignment", "Other"]
+};
+
+/* ---------- helpers ---------- */
+const app = document.getElementById('app');
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(0) + ' KB' : (b/1048576).toFixed(1) + ' MB';
+const fmtDate = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}); };
+const fmtTime = iso => new Date(iso).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+const uuid = () => {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = b[6] & 0x0f | 0x40; b[8] = b[8] & 0x3f | 0x80;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+};
+const extOf = n => (n.split('.').pop() || '').toLowerCase();
+const BLOCKED_EXT = ['exe','bat','cmd','msi','scr','com','vbs','js','jar','apk','sh','ps1','dll'];
+const MARK = `<svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><polygon points="4,44 4,32 16,32 16,20 28,20 28,8 44,8 44,44" fill="#FFB400"/></svg>`;
+
+function toast(msg, ms = 3200) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), ms);
+}
+function guessCategory(f) {
+  const n = f.name.toLowerCase();
+  if (/\bats\b|ats[_\- ]/.test(n)) return 'ATS card';
+  if (/resume|\bcv\b/.test(n)) return 'Resume';
+  if (/assign/.test(n)) return 'Assignment';
+  if (f.type.startsWith('video/')) return 'Introduction video';
+  if (f.type.startsWith('image/')) return 'Photo';
+  return 'Other';
+}
+function kindOf(f) {
+  const e = extOf(f.name), t = f.type || '';
+  if (t.startsWith('image/') || ['jpg','jpeg','png','gif','webp','heic'].includes(e)) return 'image';
+  if (t.startsWith('video/') || ['mp4','mov','webm','mkv','m4v'].includes(e)) return 'video';
+  if (e === 'pdf') return 'pdf';
+  return 'other';
+}
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const safeName = s => String(s).replace(/[\\/:*?"<>|]+/g, '_').trim() || 'untitled';
+
+/* =====================================================================
+   BACKENDS
+   Live  = Supabase (shared across all devices, private to you)
+   Demo  = this browser only (IndexedDB) so you can try the whole flow
+   ===================================================================== */
+const libOk = typeof supabase !== 'undefined';
+const isLive = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+const sb = (isLive && libOk) ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+
+const Live = {
+  // Uploads one file. Some browsers (notably Safari and in-app browsers) fail to send a File
+  // straight from the picker with "The object can not be cloned", so we retry with raw bytes.
+  async putFile(path, file) {
+    const st = sb.storage.from(CONFIG.BUCKET);
+    const opts = { contentType: file.type || 'application/octet-stream', upsert: false };
+    const isClone = e => /clone/i.test((e && (e.message || e.name)) || '');
+    try {
+      const { error } = await st.upload(path, file, opts);
+      if (!error) return;
+      if (!isClone(error)) throw error;
+    } catch (e) { if (!isClone(e)) throw e; }
+    let buf;
+    try { buf = await file.arrayBuffer(); }
+    catch (e) { throw new Error(`Could not read "${file.name}". Remove it, choose it again and retry.`); }
+    const { error } = await st.upload(path, buf, opts);
+    if (error) throw error;
+  },
+  async submit(rec, items, onProgress) {
+    const uploaded = []; let i = 0;
+    for (const it of items) {
+      onProgress(i, items.length, it.file.name);
+      const path = `${rec.id}/${Date.now()}_${i}_${it.file.name.replace(/[^\w.\-]+/g, '_')}`;
+      await this.putFile(path, it.file);
+      uploaded.push({ name: it.file.name, path, size: it.file.size, type: it.file.type, category: it.category });
+      i++;
+    }
+    onProgress(i, items.length, '');
+    const { error } = await sb.from('submissions').insert({ ...rec, files: uploaded });
+    if (error) throw error;
+  },
+  async isLoggedIn() { const { data } = await sb.auth.getSession(); return !!data.session; },
+  async login(email, pw) { const { error } = await sb.auth.signInWithPassword({ email, password: pw }); if (error) throw error; },
+  async logout() { await sb.auth.signOut(); },
+  async list() {
+    const { data, error } = await sb.from('submissions').select('*').order('created_at', { ascending: false }).limit(5000);
+    if (error) throw error; return data;
+  },
+  async fileUrl(f, download) {
+    const { data, error } = await sb.storage.from(CONFIG.BUCKET).createSignedUrl(f.path, 3600, download ? { download: f.name } : undefined);
+    if (error) throw error; return data.signedUrl;
+  },
+  async fileBlob(f) { const r = await fetch(await this.fileUrl(f)); if (!r.ok) throw new Error('Download failed'); return r.blob(); },
+  async remove(rec) {
+    if (rec.files.length) { const { error: e1 } = await sb.storage.from(CONFIG.BUCKET).remove(rec.files.map(f => f.path)); if (e1) throw e1; }
+    const { error } = await sb.from('submissions').delete().eq('id', rec.id); if (error) throw error;
+  }
+};
+
+const Demo = {
+  db() { return new Promise((res, rej) => { const r = indexedDB.open('nxtlvl-demo', 1); r.onupgradeneeded = () => r.result.createObjectStore('subs', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async run(mode, fn) { const db = await this.db(); return new Promise((res, rej) => { const t = db.transaction('subs', mode); const req = fn(t.objectStore('subs')); t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error); }); },
+  async submit(rec, items, onProgress) {
+    const files = items.map(it => ({ name: it.file.name, size: it.file.size, type: it.file.type, category: it.category, blob: it.file }));
+    for (let i = 0; i <= files.length; i++) { onProgress(i, files.length, files[i]?.name || ''); await new Promise(r => setTimeout(r, 150)); }
+    await this.run('readwrite', s => s.put({ ...rec, created_at: new Date().toISOString(), files }));
+  },
+  async isLoggedIn() { return sessionStorage.getItem('nxtlvl-demo-admin') === '1'; },
+  async login(_e, pw) { if (pw !== CONFIG.DEMO_ADMIN_PASSWORD) throw new Error('Wrong password'); sessionStorage.setItem('nxtlvl-demo-admin', '1'); },
+  async logout() { sessionStorage.removeItem('nxtlvl-demo-admin'); },
+  async list() { const all = await this.run('readonly', s => s.getAll()); return (all || []).sort((a, b) => b.created_at.localeCompare(a.created_at)); },
+  async fileUrl(f) { return URL.createObjectURL(f.blob); },
+  async fileBlob(f) { return f.blob; },
+  async remove(rec) { await this.run('readwrite', s => s.delete(rec.id)); }
+};
+const backend = isLive ? Live : Demo;
+
+/* =====================================================================
+   STUDENT VIEW
+   ===================================================================== */
+function renderStudent() {
+  const form = { name: '', college: '', collegeOther: '', stream: '', streamOther: '', date: '', files: [] };
+  const opts = list => list.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  const maxBytes = CONFIG.MAX_FILE_MB * 1048576;
+
+  app.innerHTML = `
+  <header class="hero">
+    <svg class="hero-steps" viewBox="0 0 400 240" preserveAspectRatio="xMaxYMax slice" aria-hidden="true"><polygon points="0,240 0,200 80,200 80,150 160,150 160,100 240,100 240,50 320,50 320,0 400,0 400,240" fill="#fff"/></svg>
+    <div class="hero-in">${MARK}<div><h1 class="wordmark">NXT LVL</h1><p>Student Submission Portal</p></div></div>
+  </header>
+  <main class="sheet">
+    ${isLive ? '' : `<div class="demo-banner"><b>Demo mode.</b> Submissions are saved only in this browser. Add your Supabase keys to collect from every device. Admin view: add <b>#admin</b> to the link (password: ${esc(CONFIG.DEMO_ADMIN_PASSWORD)}).</div>`}
+    <div class="stairs" id="stairs" aria-label="Progress">
+      <div class="step"><i></i><span>Your details</span></div>
+      <div class="step"><i></i><span>Your files</span></div>
+      <div class="step"><i></i><span>Ready to submit</span></div>
+    </div>
+
+    <h2 class="sec">Student information</h2>
+    <div class="field"><label class="lbl" for="f-name">Student name</label>
+      <input class="input" id="f-name" autocomplete="name" placeholder="Enter full name" maxlength="120"></div>
+    <div class="grid2">
+      <div class="field"><label class="lbl" for="f-college">College</label>
+        <select class="select" id="f-college"><option value="">Select college</option>${opts(CONFIG.COLLEGES)}<option value="__other">Other (type below)</option></select>
+        <input class="input other" id="f-college-o" placeholder="Enter your college name" maxlength="120" hidden></div>
+      <div class="field"><label class="lbl" for="f-stream">Stream</label>
+        <select class="select" id="f-stream"><option value="">Select stream</option>${opts(CONFIG.STREAMS)}<option value="__other">Other (type below)</option></select>
+        <input class="input other" id="f-stream-o" placeholder="Enter your stream" maxlength="80" hidden></div>
+    </div>
+    <div class="field"><label class="lbl" for="f-date">Training date</label>
+      <input class="input" type="date" id="f-date"></div>
+
+    <h2 class="sec">Upload your work</h2>
+    <p class="sec-sub">ATS card, introduction video, resume, photos, assignments or any other files.</p>
+    <label class="drop" id="drop" for="fileInput">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+      <strong>Upload files</strong>
+      <small>Tap to choose, or drag files here. PDF, JPG, PNG, MP4 and more, up to ${CONFIG.MAX_FILE_MB} MB each.</small>
+    </label>
+    <input class="file-input" id="fileInput" type="file" multiple>
+    <div class="errs" id="errs" role="alert" hidden></div>
+    <ul class="flist" id="flist"></ul>
+    <div class="total" id="total"></div>
+
+    <button class="btn block" id="submitBtn" disabled>Submit my work</button>
+    <p class="privacy">Only the NXT LVL team can see what you upload.</p>
+  </main>`;
+
+  const $name = $('#f-name'), $col = $('#f-college'), $colO = $('#f-college-o'), $str = $('#f-stream'), $strO = $('#f-stream-o'), $date = $('#f-date');
+  const college = () => (form.college === '__other' ? form.collegeOther : form.college).trim();
+  const stream = () => (form.stream === '__other' ? form.streamOther : form.stream).trim();
+  const detailsOk = () => !!(form.name.trim() && college() && stream() && form.date);
+
+  function refresh() {
+    $colO.hidden = form.college !== '__other'; $strO.hidden = form.stream !== '__other';
+    const d = detailsOk(), f = form.files.length > 0, steps = document.querySelectorAll('#stairs .step');
+    steps[0].classList.toggle('done', d); steps[1].classList.toggle('done', f); steps[2].classList.toggle('done', d && f);
+    $('#submitBtn').disabled = !(d && f);
+  }
+  $name.oninput = e => { form.name = e.target.value; refresh(); };
+  $col.onchange = e => { form.college = e.target.value; refresh(); if (form.college === '__other') $colO.focus(); };
+  $colO.oninput = e => { form.collegeOther = e.target.value; refresh(); };
+  $str.onchange = e => { form.stream = e.target.value; refresh(); if (form.stream === '__other') $strO.focus(); };
+  $strO.oninput = e => { form.streamOther = e.target.value; refresh(); };
+  $date.onchange = e => { form.date = e.target.value; refresh(); };
+
+  function renderFiles() {
+    $('#flist').innerHTML = form.files.map(x => `
+      <li class="frow" data-id="${x.id}">
+        <div class="badge">${esc(extOf(x.file.name).slice(0, 4).toUpperCase() || 'FILE')}</div>
+        <div class="fmeta"><div class="fname" title="${esc(x.file.name)}">${esc(x.file.name)}</div><div class="fsize">${fmtSize(x.file.size)}</div></div>
+        <select class="select sm" aria-label="File type for ${esc(x.file.name)}">${CONFIG.CATEGORIES.map(c => `<option${c === x.category ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
+        <button class="icon-btn" aria-label="Remove ${esc(x.file.name)}">&times;</button>
+      </li>`).join('');
+    const total = form.files.reduce((s, x) => s + x.file.size, 0);
+    $('#total').textContent = form.files.length ? `${form.files.length} file${form.files.length > 1 ? 's' : ''} selected, ${fmtSize(total)} in total` : '';
+  }
+  $('#flist').addEventListener('change', e => {
+    const row = e.target.closest('.frow'); if (!row) return;
+    const it = form.files.find(x => x.id === row.dataset.id); if (it) it.category = e.target.value;
+  });
+  $('#flist').addEventListener('click', e => {
+    const b = e.target.closest('.icon-btn'); if (!b) return;
+    form.files = form.files.filter(x => x.id !== b.closest('.frow').dataset.id); renderFiles(); refresh();
+  });
+
+  function addFiles(list) {
+    const errs = [];
+    for (const f of list) {
+      if (BLOCKED_EXT.includes(extOf(f.name))) { errs.push(`${f.name}: this file type can't be uploaded.`); continue; }
+      if (f.size === 0) { errs.push(`${f.name}: the file is empty.`); continue; }
+      if (f.size > maxBytes) { errs.push(`${f.name} is ${fmtSize(f.size)}. Compress it to under ${CONFIG.MAX_FILE_MB} MB and try again.`); continue; }
+      if (form.files.length >= CONFIG.MAX_FILES) { errs.push(`You can upload up to ${CONFIG.MAX_FILES} files at a time.`); break; }
+      form.files.push({ id: uuid(), file: f, category: guessCategory(f) });
+    }
+    const box = $('#errs'); box.hidden = !errs.length; box.innerHTML = errs.map(m => `<p>${esc(m)}</p>`).join('');
+    renderFiles(); refresh();
+  }
+  const drop = $('#drop');
+  function bindInput() {
+    const el = $('#fileInput');
+    el.onchange = () => {
+      addFiles([...el.files]);
+      const fresh = el.cloneNode(); fresh.value = '';   // swap in a fresh input; the old one keeps the picked files alive
+      el.replaceWith(fresh); bindInput();
+    };
+  }
+  bindInput();
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+
+  $('#submitBtn').onclick = async () => {
+    if (!detailsOk() || !form.files.length) return;
+    const rec = { id: uuid(), student_name: form.name.trim(), college: college(), stream: stream(), training_date: form.date };
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    ov.innerHTML = `<div class="modal" role="dialog" aria-live="polite"><h3>Uploading your work</h3><p id="ov-msg">Starting upload</p><div class="bar"><i id="ov-bar"></i></div><p class="hint">Keep this page open until you see the confirmation.</p></div>`;
+    document.body.append(ov);
+    const guard = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', guard);
+    try {
+      await backend.submit(rec, form.files.map(x => ({ file: x.file, category: x.category })), (done, total, name) => {
+        $('#ov-bar').style.width = Math.max(6, Math.round(done / total * 100)) + '%';
+        $('#ov-msg').textContent = done >= total ? 'Finishing up' : `Uploading file ${done + 1} of ${total}: ${name}`;
+      });
+      window.removeEventListener('beforeunload', guard); ov.remove();
+      renderDone(rec, form.files.length);
+    } catch (err) {
+      window.removeEventListener('beforeunload', guard);
+      console.error(err);
+      ov.querySelector('.modal').innerHTML = `<h3>Upload didn't finish</h3><p>${esc(err.message || 'Something went wrong.')}</p><p class="hint">Check your internet connection and try again. Your details and files are still here.</p><button class="btn sm" id="ov-close">Back to form</button>`;
+      $('#ov-close').onclick = () => ov.remove();
+    }
+  };
+  refresh();
+}
+
+function renderDone(rec, n) {
+  app.innerHTML = `
+  <header class="hero"><div class="hero-in">${MARK}<div><h1 class="wordmark">NXT LVL</h1><p>Student Submission Portal</p></div></div></header>
+  <main class="sheet"><div class="done-card">
+    <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+    <h2>Submitted, ${esc(rec.student_name.split(' ')[0])}</h2>
+    <p>We received ${n} file${n > 1 ? 's' : ''} for ${esc(rec.college)}, ${esc(rec.stream)} on ${esc(fmtDate(rec.training_date))}.</p>
+    <span class="ref">Reference ${esc(rec.id.slice(0, 8))}</span>
+    <div style="margin-top:24px"><button class="btn alt" id="again">Submit more files</button></div>
+  </div></main>`;
+  $('#again').onclick = renderStudent;
+}
+
+/* =====================================================================
+   ADMIN VIEW  (open the same link with #admin at the end)
+   ===================================================================== */
+const A = { rows: [], f: { q: '', college: '', stream: '', date: '', cat: '' }, open: new Set(), inited: false };
+
+async function adminEntry() {
+  if (isLive && !libOk) return renderFatal('Could not load the database library. Check your internet connection and refresh.');
+  (await backend.isLoggedIn()) ? renderAdmin() : renderLogin();
+}
+function renderFatal(msg) { app.innerHTML = `<main class="sheet" style="margin-top:40px"><h2 class="sec" style="margin-top:0">Can't start</h2><p>${esc(msg)}</p></main>`; }
+
+function renderLogin(message = '') {
+  app.innerHTML = `<div class="login-wrap"><form class="sheet login" id="lf" style="margin:0">
+    <div class="brand" style="color:var(--ink);margin-bottom:14px">${MARK}<b>NXT LVL</b></div>
+    <h2>Admin sign in</h2>
+    <p class="hint" style="margin:0 0 6px">Only you can see student submissions.</p>
+    ${isLive ? `<div class="field"><label class="lbl" for="l-email">Email</label><input class="input" id="l-email" type="email" autocomplete="username" required></div>` : ''}
+    <div class="field"><label class="lbl" for="l-pw">Password</label><input class="input" id="l-pw" type="password" autocomplete="current-password" required></div>
+    <p class="msg" id="l-msg" role="alert">${esc(message)}</p>
+    <button class="btn block" style="margin-top:12px" type="submit">Sign in</button>
+    <p class="mode">${isLive ? 'Live database' : 'Demo mode, data stays on this device'}</p>
+  </form></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault(); const btn = e.target.querySelector('button'); btn.disabled = true;
+    try { await backend.login($('#l-email')?.value.trim(), $('#l-pw').value); renderAdmin(); }
+    catch (err) { $('#l-msg').textContent = err.message === 'Invalid login credentials' ? 'Email or password is incorrect.' : (err.message || 'Could not sign in.'); btn.disabled = false; }
+  };
+}
+
+async function renderAdmin() {
+  app.innerHTML = `<div class="wrap" id="adminRoot">
+    <div class="topbar">
+      <div class="brand">${MARK}<div><b>NXT LVL Student Database</b><br><span>${isLive ? 'Live database' : 'Demo mode, this device only'}</span></div></div>
+      <div class="actions">
+        <button class="btn sm alt" data-act="share">Share link and QR</button>
+        <button class="btn sm alt" data-act="csv">Export CSV</button>
+        <button class="btn sm alt" data-act="zip">Download files (ZIP)</button>
+        <button class="btn sm alt" data-act="refresh">Refresh</button>
+        <button class="btn sm alt" data-act="logout">Sign out</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="search"><label class="lbl" for="q">Search</label><input class="input" id="q" placeholder="Student name or reference"></div>
+      <div><label class="lbl" for="fc">College</label><select class="select" id="fc"></select></div>
+      <div><label class="lbl" for="fs">Stream</label><select class="select" id="fs"></select></div>
+      <div><label class="lbl" for="fd">Training date</label><select class="select" id="fd"></select></div>
+      <div><label class="lbl" for="ft">File type</label><select class="select" id="ft"></select></div>
+      <button class="btn sm alt" data-act="reset" style="height:44px">Clear</button>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="tree" id="tree"></div>
+  </div>`;
+  const root = $('#adminRoot');
+  root.addEventListener('click', onAdminClick);
+  $('#q').oninput = e => { A.f.q = e.target.value; drawList(); };
+  ['fc:college', 'fs:stream', 'fd:date', 'ft:cat'].forEach(p => { const [id, key] = p.split(':'); $('#' + id).onchange = e => { A.f[key] = e.target.value; drawList(); }; });
+  $('#tree').addEventListener('toggle', e => { const k = e.target.dataset?.k; if (!k) return; e.target.open ? A.open.add(k) : A.open.delete(k); }, true);
+  await loadRows();
+}
+
+async function loadRows() {
+  try { A.rows = await backend.list(); }
+  catch (err) { console.error(err); if (isLive) { await backend.logout(); return renderLogin('Session expired or access denied. Sign in again.'); } return toast('Could not load submissions.'); }
+  if (!A.inited) {
+    A.inited = true;
+    const many = A.rows.length > 40;
+    A.rows.forEach(r => { A.open.add('c:' + r.college); A.open.add(`s:${r.college}|${r.stream}`); if (!many) A.open.add(`d:${r.college}|${r.stream}|${r.training_date}`); });
+  }
+  fillFilters(); drawList();
+}
+
+function fillFilters() {
+  const uniq = (fn) => [...new Set(A.rows.map(fn))].filter(Boolean);
+  const set = (id, label, values, cur, fmt = x => x) => {
+    const el = $('#' + id); el.innerHTML = `<option value="">${label}</option>` + values.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(fmt(v))}</option>`).join('');
+  };
+  set('fc', 'All colleges', uniq(r => r.college).sort(), A.f.college);
+  set('fs', 'All streams', uniq(r => r.stream).sort(), A.f.stream);
+  set('fd', 'All dates', uniq(r => r.training_date).sort().reverse(), A.f.date, fmtDate);
+  set('ft', 'All file types', CONFIG.CATEGORIES, A.f.cat);
+}
+
+const filtersActive = () => Object.values(A.f).some(Boolean);
+const visibleFiles = r => r.files.map((f, i) => ({ f, i })).filter(x => !A.f.cat || x.f.category === A.f.cat);
+function filtered() {
+  const q = A.f.q.trim().toLowerCase();
+  return A.rows.filter(r =>
+    (!A.f.college || r.college === A.f.college) && (!A.f.stream || r.stream === A.f.stream) && (!A.f.date || r.training_date === A.f.date) &&
+    (!q || r.student_name.toLowerCase().includes(q) || r.id.startsWith(q)) &&
+    (!A.f.cat || r.files.some(f => f.category === A.f.cat)));
+}
+
+function drawList() {
+  const rows = filtered();
+  const nFiles = rows.reduce((s, r) => s + visibleFiles(r).length, 0);
+  const bytes = rows.reduce((s, r) => s + visibleFiles(r).reduce((t, x) => t + (x.f.size || 0), 0), 0);
+  $('#summary').innerHTML = `<span><b>${rows.length}</b> submission${rows.length === 1 ? '' : 's'}, <b>${nFiles}</b> file${nFiles === 1 ? '' : 's'}, ${fmtSize(bytes)}</span><span>${filtersActive() ? 'Filters applied' : 'Showing everything'}</span>`;
+  const tree = $('#tree');
+  if (!rows.length) {
+    tree.innerHTML = `<div class="empty"><b>${A.rows.length ? 'No submissions match these filters' : 'No submissions yet'}</b>${A.rows.length ? 'Clear the filters to see everything.' : 'Use Share link and QR to send the portal to your students.'}</div>`;
+    return;
+  }
+  const g = {};
+  rows.forEach(r => { ((g[r.college] = g[r.college] || {})[r.stream] = g[r.college][r.stream] || {}); (g[r.college][r.stream][r.training_date] = g[r.college][r.stream][r.training_date] || []).push(r); });
+  const force = filtersActive();
+  const op = k => (force || A.open.has(k)) ? ' open' : '';
+  let html = '';
+  for (const c of Object.keys(g).sort()) {
+    const cCount = Object.values(g[c]).flatMap(s => Object.values(s)).flat().length;
+    html += `<details class="l1" data-k="c:${esc(c)}"${op('c:' + c)}><summary>${esc(c)}<span class="count">${cCount}</span></summary>`;
+    for (const s of Object.keys(g[c]).sort()) {
+      const sCount = Object.values(g[c][s]).flat().length;
+      html += `<details class="l2" data-k="s:${esc(c)}|${esc(s)}"${op(`s:${c}|${s}`)}><summary>${esc(s)}<span class="count">${sCount}</span></summary>`;
+      for (const d of Object.keys(g[c][s]).sort().reverse()) {
+        const list = g[c][s][d]; const k = `d:${c}|${s}|${d}`;
+        html += `<details class="l3" data-k="${esc(k)}"${op(k)}><summary>${esc(fmtDate(d))}<span class="count">${list.length}</span></summary><div class="subs">`;
+        html += list.map(subHTML).join('') + `</div></details>`;
+      }
+      html += `</details>`;
+    }
+    html += `</details>`;
+  }
+  tree.innerHTML = html;
+}
+
+function subHTML(r) {
+  const files = visibleFiles(r).map(({ f, i }) => `
+    <li><span class="cat">${esc(f.category || 'Other')}</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="fsize">${fmtSize(f.size || 0)}</span>
+      <button class="link" data-act="view" data-id="${r.id}" data-fi="${i}">View</button>
+      <button class="link" data-act="dl" data-id="${r.id}" data-fi="${i}">Download</button></li>`).join('');
+  return `<article class="sub"><div class="sub-h"><div><strong>${esc(r.student_name)}</strong>
+    <div class="sub-meta"><span>Submitted ${esc(fmtTime(r.created_at))}</span><span>Reference ${esc(r.id.slice(0, 8))}</span><span>${r.files.length} file${r.files.length === 1 ? '' : 's'}</span></div></div>
+    <button class="link danger" data-act="del" data-id="${r.id}">Delete</button></div>
+    <ul class="files">${files || '<li style="grid-template-columns:1fr">No files in this submission</li>'}</ul></article>`;
+}
+
+async function onAdminClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, r = A.rows.find(x => x.id === b.dataset.id), f = r && r.files[+b.dataset.fi];
+  try {
+    if (act === 'refresh') { await loadRows(); toast('Refreshed'); }
+    else if (act === 'logout') { await backend.logout(); A.rows = []; A.inited = false; renderLogin(); }
+    else if (act === 'reset') { A.f = { q: '', college: '', stream: '', date: '', cat: '' }; $('#q').value = ''; fillFilters(); drawList(); }
+    else if (act === 'share') openShare();
+    else if (act === 'csv') exportCSV();
+    else if (act === 'zip') await exportZip(b);
+    else if (act === 'view') await viewFile(f);
+    else if (act === 'dl') { const url = await backend.fileUrl(f, true); const a = document.createElement('a'); a.href = url; a.download = f.name; document.body.append(a); a.click(); a.remove(); }
+    else if (act === 'del') {
+      if (!confirm(`Delete ${r.student_name}'s submission and its ${r.files.length} file(s)? This can't be undone.`)) return;
+      await backend.remove(r); A.rows = A.rows.filter(x => x.id !== r.id); fillFilters(); drawList(); toast('Submission deleted');
+    }
+  } catch (err) { console.error(err); toast(err.message || 'Something went wrong.'); }
+}
+
+async function viewFile(f) {
+  const kind = kindOf(f);
+  if (kind === 'image' || kind === 'video') {
+    const url = await backend.fileUrl(f);
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    ov.innerHTML = `<button class="preview-x" aria-label="Close preview">&times;</button>` +
+      (kind === 'image' ? `<img class="preview" src="${url}" alt="${esc(f.name)}">` : `<video class="preview" src="${url}" controls autoplay playsinline></video>`);
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = ev => ev.key === 'Escape' && close();
+    ov.addEventListener('click', ev => { if (ev.target === ov || ev.target.classList.contains('preview-x')) close(); });
+    document.addEventListener('keydown', onKey); document.body.append(ov);
+  } else {
+    const w = window.open('', '_blank');
+    const url = await backend.fileUrl(f);
+    if (w) w.location.href = url; else toast('Allow pop-ups for this page to open files, or use Download.');
+  }
+}
+
+function exportCSV() {
+  const rows = filtered(); if (!rows.length) return toast('Nothing to export');
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const head = ['Reference', 'Submitted at', 'Student name', 'College', 'Stream', 'Training date', 'File count', 'Files', 'File types'];
+  const lines = rows.map(r => { const vf = visibleFiles(r).map(x => x.f); return [r.id.slice(0, 8), r.created_at, r.student_name, r.college, r.stream, r.training_date, vf.length, vf.map(x => x.name).join('; '), vf.map(x => x.category).join('; ')].map(q).join(','); });
+  saveBlob(new Blob(['\ufeff' + [head.map(q).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }), `nxtlvl-submissions-${new Date().toISOString().slice(0, 10)}.csv`);
+  toast(`Exported ${rows.length} submissions`);
+}
+
+async function exportZip(btn) {
+  if (typeof JSZip === 'undefined') return toast('ZIP library did not load. Check your connection.');
+  const items = filtered().flatMap(r => visibleFiles(r).map(x => ({ r, f: x.f, i: x.i })));
+  if (!items.length) return toast('No files to download');
+  if (!confirm(`Download ${items.length} file(s) as one ZIP, organised as College / Stream / Date / Student? Large sets can take a while.`)) return;
+  const label = btn.textContent; btn.disabled = true;
+  const zip = new JSZip(); let n = 0;
+  try {
+    for (const { r, f, i } of items) {
+      btn.textContent = `Preparing ${++n} of ${items.length}`;
+      const path = [safeName(r.college), safeName(r.stream), safeName(fmtDate(r.training_date)), safeName(r.student_name)].join('/') + `/${safeName(f.category || 'Other')} ${i + 1} - ${safeName(f.name)}`;
+      zip.file(path, await backend.fileBlob(f));
+    }
+    btn.textContent = 'Building ZIP';
+    saveBlob(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), `NXT LVL Student Database ${new Date().toISOString().slice(0, 10)}.zip`);
+  } finally { btn.textContent = label; btn.disabled = false; }
+}
+
+function openShare() {
+  const url = location.href.split('#')[0];
+  const local = location.protocol === 'file:';
+  const ov = document.createElement('div'); ov.className = 'overlay';
+  ov.innerHTML = `<div class="modal" role="dialog"><h3>Student link</h3>
+    <p class="hint">Share this link or QR code with students. It only opens the upload form.</p>
+    ${local ? `<p class="errs">This file is open from your computer, so this link won't work for students yet. Host the file first (see setup steps), then open the hosted link and come back here.</p>` : ''}
+    <canvas class="qr" id="qr"></canvas>
+    <div class="copy-row"><input class="input" id="su" readonly value="${esc(url)}"><button class="btn sm" id="cp">Copy</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn sm alt" id="dq">Download QR</button><button class="btn sm dark" id="cl" style="margin-left:auto">Close</button></div></div>`;
+  document.body.append(ov);
+  try {
+    const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+    const n = qr.getModuleCount(), cell = 8, m = 16, c = $('#qr'); c.width = c.height = n * cell + m * 2;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#12143A';
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) x.fillRect(m + k * cell, m + r * cell, cell, cell);
+  } catch (e) { $('#qr').replaceWith(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'QR code could not be generated. Check your connection.' })); }
+  $('#cl').onclick = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  $('#cp').onclick = async () => { try { await navigator.clipboard.writeText(url); } catch { $('#su').select(); document.execCommand('copy'); } toast('Link copied'); };
+  $('#dq').onclick = () => { const c = $('#qr'); if (c.toBlob) c.toBlob(b => saveBlob(b, 'nxtlvl-portal-qr.png')); };
+}
+
+/* ---------- router ---------- */
+function route() { location.hash === '#admin' ? adminEntry() : renderStudent(); }
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
