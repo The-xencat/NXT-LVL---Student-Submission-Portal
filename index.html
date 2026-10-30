@@ -185,9 +185,18 @@ const CONFIG = {
   MAX_FILES: 25,
   DEMO_ADMIN_PASSWORD: "admin",   // only used in demo mode
 
-  // "Other (type below)" is added automatically to the College and Stream dropdowns.
+  // Students can't change College while this is set. Set it to "" to bring back the dropdown below.
+  FIXED_COLLEGE: "CMS Business School",
+  // Same idea, for Stream: set this to one value to lock it, or leave "" to let students pick.
+  FIXED_STREAM: "MBA Digital Marketing",
+  // "Other (type below)" is added automatically to the College and Stream dropdowns (used only when the matching
+  // FIXED_ value above is "").
   COLLEGES: ["CMS Business School, Jain University", "Krupanidhi College", "Christ University", "Jain University", "Mount Carmel College", "St. Joseph's University", "Presidency University", "Kristu Jayanti University"],
-  STREAMS:  ["MBA Marketing", "MBA Finance", "MBA HR", "MBA Operations", "MBA Business Analytics", "BBA", "BCom", "BCA", "MCA", "Engineering \u2014 CSE/IT", "Engineering \u2014 ECE", "Engineering \u2014 Mechanical"],
+  STREAMS:  ["MBA Digital Marketing", "MBA Finance", "MBA HR", "MBA Operations", "MBA Business Analytics", "BBA", "BCom", "BCA", "MCA", "Engineering \u2014 CSE/IT", "Engineering \u2014 ECE", "Engineering \u2014 Mechanical"],
+  // To turn off one college or stream later without deleting it, add its exact name here (copy it from the
+  // list above). Remove it from here any time to bring it back. Leave both empty to show everything.
+  DISABLED_COLLEGES: [],
+  DISABLED_STREAMS: [],
   // What each uploaded file is. "Other" makes the student type a label.
   // "Other" needs no text from the student. "Type here" makes them type a label.
   // They stay two separate, separately-filterable types in the admin dashboard.
@@ -324,8 +333,10 @@ const backend = isLive ? Live : Demo;
    STUDENT VIEW
    ===================================================================== */
 function renderStudent() {
-  const form = { name: '', college: '', collegeOther: '', stream: '', streamOther: '', date: todayISO(), files: [] };
+  const form = { name: '', college: CONFIG.FIXED_COLLEGE || '', collegeOther: '', stream: CONFIG.FIXED_STREAM || '', streamOther: '', date: todayISO(), files: [] };
   const opts = list => list.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  const activeColleges = CONFIG.COLLEGES.filter(c => !CONFIG.DISABLED_COLLEGES.includes(c));
+  const activeStreams = CONFIG.STREAMS.filter(s => !CONFIG.DISABLED_STREAMS.includes(s));
   const maxBytes = CONFIG.MAX_FILE_MB * 1048576;
 
   app.innerHTML = `
@@ -345,15 +356,21 @@ function renderStudent() {
     <div class="field"><label class="lbl" for="f-name">Student name</label>
       <input class="input" id="f-name" autocomplete="name" placeholder="Enter full name" maxlength="120"></div>
     <div class="grid2">
-      <div class="field"><label class="lbl" for="f-college">College</label>
-        <select class="select" id="f-college"><option value="">Select college</option>${opts(CONFIG.COLLEGES)}<option value="__other">Other (type below)</option></select>
-        <input class="input other" id="f-college-o" placeholder="Enter your college name" maxlength="120" hidden></div>
-      <div class="field"><label class="lbl" for="f-stream">Stream</label>
-        <select class="select" id="f-stream"><option value="">Select stream</option>${opts(CONFIG.STREAMS)}<option value="__other">Other (type below)</option></select>
-        <input class="input other" id="f-stream-o" placeholder="Enter your stream" maxlength="80" hidden></div>
+      <div class="field"><label class="lbl">College</label>
+        ${CONFIG.FIXED_COLLEGE
+          ? `<div class="input" style="display:flex;align-items:center;background:var(--tint);color:var(--muted);cursor:not-allowed">${esc(CONFIG.FIXED_COLLEGE)}</div>`
+          : `<select class="select" id="f-college"><option value="">Select college</option>${opts(activeColleges)}<option value="__other">Other (type below)</option></select>
+             <input class="input other" id="f-college-o" placeholder="Enter your college name" maxlength="120" hidden>`}
+      </div>
+      <div class="field"><label class="lbl">Stream</label>
+        ${CONFIG.FIXED_STREAM
+          ? `<div class="input" style="display:flex;align-items:center;background:var(--tint);color:var(--muted);cursor:not-allowed">${esc(CONFIG.FIXED_STREAM)}</div>`
+          : `<select class="select" id="f-stream"><option value="">Select stream</option>${opts(activeStreams)}<option value="__other">Other (type below)</option></select>
+             <input class="input other" id="f-stream-o" placeholder="Enter your stream" maxlength="80" hidden>`}
+      </div>
     </div>
-    <div class="field"><label class="lbl" for="f-date">Training date</label>
-      <input class="input" type="date" id="f-date" value="${todayISO()}" max="${todayISO()}"></div>
+    <div class="field"><label class="lbl">Training date</label>
+      <div class="input" style="display:flex;align-items:center;background:var(--tint);color:var(--muted);cursor:not-allowed">${esc(fmtDate(todayISO()))}</div></div>
 
     <h2 class="sec">Upload your work</h2>
     <p class="sec-sub">ATS card, introduction video, resume, photos, assignments or any other files.</p>
@@ -363,6 +380,11 @@ function renderStudent() {
       <small>Tap to choose, or drag files here. PDF, JPG, PNG, MP4 and more, up to ${CONFIG.MAX_FILE_MB} MB each.</small>
     </label>
     <input class="file-input" id="fileInput" type="file" multiple>
+    <input class="file-input" id="folderInput" type="file" webkitdirectory multiple>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+      <button type="button" class="btn sm alt" id="folderBtn">Upload a whole folder instead</button>
+      <span class="hint">Works on most computers. Not available on phones.</span>
+    </div>
     <div class="errs" id="errs" role="alert" hidden></div>
     <ul class="flist" id="flist"></ul>
     <div class="total" id="total"></div>
@@ -372,14 +394,19 @@ function renderStudent() {
     <p class="privacy">Only the NXT LVL team can see what you upload.</p>
   </main>`;
 
-  const $name = $('#f-name'), $col = $('#f-college'), $colO = $('#f-college-o'), $str = $('#f-stream'), $strO = $('#f-stream-o'), $date = $('#f-date');
+  const $name = $('#f-name');
+  const $col = CONFIG.FIXED_COLLEGE ? null : $('#f-college');
+  const $colO = CONFIG.FIXED_COLLEGE ? null : $('#f-college-o');
+  const $str = CONFIG.FIXED_STREAM ? null : $('#f-stream');
+  const $strO = CONFIG.FIXED_STREAM ? null : $('#f-stream-o');
   const college = () => (form.college === '__other' ? form.collegeOther : form.college).trim();
   const stream = () => (form.stream === '__other' ? form.streamOther : form.stream).trim();
   const detailsOk = () => !!(form.name.trim() && college() && stream() && form.date);
   const typesOk = () => form.files.every(x => x.category && (x.category !== 'Type here' || x.otherLabel.trim()));
 
   function refresh() {
-    $colO.hidden = form.college !== '__other'; $strO.hidden = form.stream !== '__other';
+    if ($colO) $colO.hidden = form.college !== '__other';
+    if ($strO) $strO.hidden = form.stream !== '__other';
     const d = detailsOk(), f = form.files.length > 0 && typesOk(), steps = document.querySelectorAll('#stairs .step');
     steps[0].classList.toggle('done', d); steps[1].classList.toggle('done', f); steps[2].classList.toggle('done', d && f);
     $('#submitBtn').disabled = !(d && f);
@@ -387,11 +414,10 @@ function renderStudent() {
     need.textContent = 'Choose what each file is before submitting. If you pick Other, type what it is.';
   }
   $name.oninput = e => { form.name = e.target.value; refresh(); };
-  $col.onchange = e => { form.college = e.target.value; refresh(); if (form.college === '__other') $colO.focus(); };
-  $colO.oninput = e => { form.collegeOther = e.target.value; refresh(); };
-  $str.onchange = e => { form.stream = e.target.value; refresh(); if (form.stream === '__other') $strO.focus(); };
-  $strO.oninput = e => { form.streamOther = e.target.value; refresh(); };
-  $date.onchange = e => { form.date = e.target.value; refresh(); };
+  if ($col) $col.onchange = e => { form.college = e.target.value; refresh(); if (form.college === '__other') $colO.focus(); };
+  if ($colO) $colO.oninput = e => { form.collegeOther = e.target.value; refresh(); };
+  if ($str) $str.onchange = e => { form.stream = e.target.value; refresh(); if (form.stream === '__other') $strO.focus(); };
+  if ($strO) $strO.oninput = e => { form.streamOther = e.target.value; refresh(); };
 
   function renderFiles() {
     $('#flist').innerHTML = form.files.map(x => `
@@ -435,15 +461,18 @@ function renderStudent() {
     renderFiles(); refresh();
   }
   const drop = $('#drop');
-  function bindInput() {
-    const el = $('#fileInput');
+  function bindPicker(id, rebind) {
+    const el = $('#' + id);
     el.onchange = () => {
       addFiles([...el.files]);
       const fresh = el.cloneNode(); fresh.value = '';   // swap in a fresh input; the old one keeps the picked files alive
-      el.replaceWith(fresh); bindInput();
+      el.replaceWith(fresh); rebind();
     };
   }
-  bindInput();
+  function bindInput() { bindPicker('fileInput', bindInput); }
+  function bindFolderInput() { bindPicker('folderInput', bindFolderInput); }
+  bindInput(); bindFolderInput();
+  $('#folderBtn').onclick = () => $('#folderInput').click();
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
